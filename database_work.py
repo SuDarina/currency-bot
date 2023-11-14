@@ -1,11 +1,12 @@
 import psycopg2
 import numpy as np
 import matplotlib.pyplot as plt
+from obj_store_work import upload_to_os
 
 con = psycopg2.connect(
-    database="db1",
-    user="postgres",
-    password="",
+    database="currency_bot",
+    user="user",
+    password="1234567890",
     host="localhost",
     port="5432"
 )
