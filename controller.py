@@ -54,7 +54,10 @@ def telegram_bot(token):
     @bot.message_handler(commands=["notifyOn"])
     def enable_notifications(message):
         user_id = message.chat.id
-        if not get_notify(user_id)[0] or get_notify(user_id)[0] is None:
+        if get_notify(user_id) is None:
+            bot.send_message(user_id, "Банки или валюты не выбраны!")
+            return
+        if not get_notify(user_id)[0]:
             update_notify(user_id, True)
             bot.send_message(user_id, "Ежедневные уведомления включены!")
 
@@ -77,7 +80,7 @@ def telegram_bot(token):
             response = bot.send_message(message.chat.id, text="Выберите валюты:", reply_markup=kb_currencies)
             bot.register_next_step_handler(response, choose_currency, d)
         if message.text == 'Закрыть':
-            bot.send_message(message.chat.id, text=f"Изменения сохранены.\nТекущие настройки:\n Банки:{d.get('l')}\n"
+            bot.send_message(message.chat.id, text=f"Изменения сохранены.\nТекущие настройки:\nБанки:{d.get('l')}\n"
                                                    f"Валюты: {d.get('c')}", reply_markup=types.ReplyKeyboardRemove())
 
     def choose_banks(message, d):
@@ -89,7 +92,8 @@ def telegram_bot(token):
             message = bot.send_message(message.chat.id, text="Выберите банки:", reply_markup=kb_banks)
             bot.register_next_step_handler(message, choose_banks, d)
         else:
-            add_banks(message.chat.id, d.get('l'))
+            if d.get('l') is None:
+                add_banks(message.chat.id, d.get('l'))
             message = bot.send_message(message.chat.id, text=f"Выбранные банки: {d.get('l')}. Сохранено!",
                                        reply_markup=kb_configure)
             bot.register_next_step_handler(message, choose_option, d)
@@ -117,7 +121,8 @@ def telegram_bot(token):
             message = bot.send_message(message.chat.id, text="Выберите валюты:", reply_markup=kb_currencies)
             bot.register_next_step_handler(message, choose_currency, d)
         else:
-            add_currencies(message.chat.id, d.get('c'))
+            if d.get('c') is None:
+                add_currencies(message.chat.id, d.get('c'))
             bot.send_message(message.chat.id, text=f"Выбранные валюты: {d.get('c')}. Сохранено!",
                              reply_markup=kb_configure)
             bot.register_next_step_handler(message, choose_option, d)
