@@ -57,6 +57,25 @@ def add_currencies(id, currencies):
     # upload_to_os(file)
 
 
+def update_notify(id, notify):
+    cur.execute(f"SELECT id FROM currency_bot_data WHERE id={id}")
+    if cur.fetchone() is None:
+        cur.execute(
+            f"INSERT INTO currency_bot_data (id, notify) VALUES ({id}, false)"
+        )
+
+    else:
+        cur.execute(
+            f"UPDATE currency_bot_data SET notify = {notify} WHERE id = {id};"
+        )
+    con.commit()
+
+
+def get_notify(id):
+    cur.execute(f"SELECT notify FROM currency_bot_data WHERE id={id}")
+    return cur.fetchone()
+
+
 def get_banks(id):
     cur.execute(f"SELECT banks FROM currency_bot_data WHERE id={id}")
     return cur.fetchone()
@@ -93,7 +112,7 @@ def get_statistics_currencies():
 def form_gist(filename, popular_banks, popular_currencies):
     x1 = np.array(['Тинькофф', 'ВТБ', 'СБЕР', 'Газпромбанк', 'Альфа-Банк'])
     y1 = np.array([popular_banks.get('Тинькофф'), popular_banks.get('ВТБ'),
-                 popular_banks.get('СБЕР'), popular_banks.get('Газпромбанк'), popular_banks.get('Альфа-Банк')])
+                   popular_banks.get('СБЕР'), popular_banks.get('Газпромбанк'), popular_banks.get('Альфа-Банк')])
 
     x2 = np.array(['Доллар', 'Евро'])
     y2 = np.array([popular_currencies.get('Доллар'), popular_currencies.get('Евро')])
