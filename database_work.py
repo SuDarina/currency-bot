@@ -129,3 +129,8 @@ def form_gist(filename, popular_banks, popular_currencies):
     fig.set_figheight(12)
 
     plt.savefig(filename)
+
+
+def drop_notifications():
+    cur.execute(f"update currency_bot_data set notify = false")
+    con.commit()

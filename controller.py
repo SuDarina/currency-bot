@@ -19,7 +19,7 @@ def send_daily_notifications(user_id, bot):
 
             for bank in banks_list:
                 for currency in currencies_list:
-                    message_text = get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(currency))
+                    message_text = get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(currency), bank, currency)
                     bot.send_message(user_id, text=message_text)
 
             time.sleep(24 * 60 * 60)
@@ -139,6 +139,6 @@ def telegram_bot(token):
         for bank in get_banks(user_id)[0]:
             for curr in get_currencies(user_id)[0]:
                 bot.send_message(message.chat.id,
-                                 text=get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(curr)))
+                                 text=get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(curr), bank, curr))
 
     bot.polling()
