@@ -1,6 +1,7 @@
+import threading
 from datetime import datetime
 import schedule
-
+import time
 from telebot import types
 
 from rf_bank_api import get_banks_currency
@@ -11,11 +12,23 @@ from obj_store_work import get_from_os
 
 import telebot
 
+user_preferences = {}
 
-def schedule_statistic():
-    schedule.every().monday.at("07:00").do(form_gist, 'statistics')
+
+def send_daily_notifications(user_id, bot):
     while True:
-        schedule.run_pending()
+        if user_preferences.get(user_id, {}).get('notifications_enabled', False):
+            banks_list = get_banks(user_id)[0]
+            currencies_list = get_currencies(user_id)[0]
+
+            for bank in banks_list:
+                for currency in currencies_list:
+                    message_text = get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(currency))
+                    bot.send_message(user_id, text=message_text)
+
+            time.sleep(30)
+        else:
+            time.sleep(60)
 
 
 def telegram_bot(token):
@@ -39,6 +52,21 @@ def telegram_bot(token):
         response = bot.send_message(message.chat.id, text="Выберите из списка:", reply_markup=kb_configure)
         d = {'c': [], 'l': []}
         bot.register_next_step_handler(response, choose_option, d)
+
+    @bot.message_handler(commands=["notifyOn"])
+    def enable_notifications(message):
+        user_id = message.chat.id
+        user_preferences[user_id] = {'notifications_enabled': True}
+        bot.send_message(user_id, "Ежедневные уведомления включены!")
+
+        notification_thread = threading.Thread(target=send_daily_notifications, args=(user_id, bot))
+        notification_thread.start()
+
+    @bot.message_handler(commands=["notifyOff"])
+    def disable_notifications(message):
+        user_id = message.chat.id
+        user_preferences[user_id] = {'notifications_enabled': False}
+        bot.send_message(user_id, "Ежедневные уведомления выключены!")
 
     # Падает
     # @bot.message_handler(commands=['getstat'])
@@ -110,11 +138,11 @@ def telegram_bot(token):
     # def notify_on(message):
     #     configure_notification(message)
 
-    def configure_notification(message):
-        schedule.every().day.at("07:00").do(send_notify, message)
-        bot.send_message(message.chat.id, f"Уведомления включены.", parse_mode='html')
-        while True:
-            schedule.run_pending()
+    # def configure_notification(message):
+    #     schedule.every().day.at("07:00").do(send_notify, message)
+    #     bot.send_message(message.chat.id, f"Уведомления включены.", parse_mode='html')
+    #     while True:
+    #         schedule.run_pending()
 
     def send_notify(message):
         bot.send_message(message.chat.id, text=str(datetime.now()))
