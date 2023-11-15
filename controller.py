@@ -54,13 +54,14 @@ def telegram_bot(token):
 
     def process_location(message):
         if message.location:
+            user_id = message.chat.id
             latitude = message.location.latitude
             longitude = message.location.longitude
             geocoder_url = "https://search-maps.yandex.ru/v1/"
             params = {
                 "apikey": "cd3ab8da-15f6-4feb-83ac-c13e22eb2c24",
                 "format": "json",
-                "text": "обмен валют",
+                "text": f"обмен валют, {get_banks(user_id)}",
                 "lang": "ru_RU",
                 "ll": f"{longitude},{latitude}",
                 "spn": "0.02, 0.02",
