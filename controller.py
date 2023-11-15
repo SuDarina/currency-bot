@@ -92,7 +92,7 @@ def telegram_bot(token):
             message = bot.send_message(message.chat.id, text="Выберите банки:", reply_markup=kb_banks)
             bot.register_next_step_handler(message, choose_banks, d)
         else:
-            if d.get('l') is None:
+            if d.get('l') is not None:
                 add_banks(message.chat.id, d.get('l'))
             message = bot.send_message(message.chat.id, text=f"Выбранные банки: {d.get('l')}. Сохранено!",
                                        reply_markup=kb_configure)
@@ -121,7 +121,7 @@ def telegram_bot(token):
             message = bot.send_message(message.chat.id, text="Выберите валюты:", reply_markup=kb_currencies)
             bot.register_next_step_handler(message, choose_currency, d)
         else:
-            if d.get('c') is None:
+            if d.get('c') is not None:
                 add_currencies(message.chat.id, d.get('c'))
             bot.send_message(message.chat.id, text=f"Выбранные валюты: {d.get('c')}. Сохранено!",
                              reply_markup=kb_configure)
