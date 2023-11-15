@@ -1,23 +1,19 @@
 import threading
 from datetime import datetime
-import schedule
 import time
 from telebot import types
 
 from rf_bank_api import get_banks_currency
 from keyboards import kb_banks, kb_currencies, kb_configure
-from database_work import add_banks, add_currencies, get_currencies, get_banks, form_gist
+from database_work import add_banks, add_currencies, get_currencies, get_banks, form_gist, update_notify, get_notify
 from data import banks, currencies, rus_to_en_banks, rus_to_en_currencies
-from obj_store_work import get_from_os
 
 import telebot
-
-user_preferences = {}
 
 
 def send_daily_notifications(user_id, bot):
     while True:
-        if user_preferences.get(user_id, {}).get('notifications_enabled', False):
+        if get_notify(user_id)[0]:
             banks_list = get_banks(user_id)[0]
             currencies_list = get_currencies(user_id)[0]
 
@@ -26,7 +22,7 @@ def send_daily_notifications(user_id, bot):
                     message_text = get_banks_currency(rus_to_en_banks.get(bank), rus_to_en_currencies.get(currency))
                     bot.send_message(user_id, text=message_text)
 
-            time.sleep(30)
+            time.sleep(24 * 60 * 60)
         else:
             time.sleep(60)
 
@@ -40,8 +36,10 @@ def telegram_bot(token):
 
     @bot.message_handler(commands=["help"])
     def start_message(message):
-        bot.send_message(message.chat.id, "/help - помощь \n/configure - выбор валют и банков \n/notifyOn - включить ежедневные уведомления\n"
-                                          "/get - получить сводку по выбранным валютам и банкам \n/getstat - получение статистики ")
+        bot.send_message(message.chat.id,
+                         "/help - помощь \n/configure - выбор валют и банков \n/notifyOn - включить ежедневные уведомления\n"
+                         "/notifyOff - выключить ежедневные уведомления\n"
+                         "/get - получить сводку по выбранным валютам и банкам \n/getstat - получение статистики ")
 
     @bot.message_handler(commands=["get"])
     def start_message(message):
@@ -56,23 +54,20 @@ def telegram_bot(token):
     @bot.message_handler(commands=["notifyOn"])
     def enable_notifications(message):
         user_id = message.chat.id
-        user_preferences[user_id] = {'notifications_enabled': True}
-        bot.send_message(user_id, "Ежедневные уведомления включены!")
+        if not get_notify(user_id)[0] or get_notify(user_id)[0] is None:
+            update_notify(user_id, True)
+            bot.send_message(user_id, "Ежедневные уведомления включены!")
 
-        notification_thread = threading.Thread(target=send_daily_notifications, args=(user_id, bot))
-        notification_thread.start()
+            notification_thread = threading.Thread(target=send_daily_notifications, args=(user_id, bot))
+            notification_thread.start()
+        else:
+            bot.send_message(user_id, "Ежедневные уведомления уже включены!")
 
     @bot.message_handler(commands=["notifyOff"])
     def disable_notifications(message):
         user_id = message.chat.id
-        user_preferences[user_id] = {'notifications_enabled': False}
+        update_notify(user_id, False)
         bot.send_message(user_id, "Ежедневные уведомления выключены!")
-
-    # Падает
-    # @bot.message_handler(commands=['getstat'])
-    # def start_message(message: types.Message):
-    #     response = get_from_os()
-    #     bot.send_photo(message.chat.id, response['Body'].read())
 
     def choose_option(message, d):
         if message.text == 'Выбрать банки':
@@ -132,17 +127,6 @@ def telegram_bot(token):
         user_id = message.chat.id
         bot.send_message(message.chat.id, text=f"Текущие настройки:\n Банки:{get_banks(user_id)}\n"
                                                f"Валюты: {get_currencies(user_id)}")
-
-    # Падает если отправить 2 и больше раза
-    # @bot.message_handler(commands=['notifyOn'])
-    # def notify_on(message):
-    #     configure_notification(message)
-
-    # def configure_notification(message):
-    #     schedule.every().day.at("07:00").do(send_notify, message)
-    #     bot.send_message(message.chat.id, f"Уведомления включены.", parse_mode='html')
-    #     while True:
-    #         schedule.run_pending()
 
     def send_notify(message):
         bot.send_message(message.chat.id, text=str(datetime.now()))
