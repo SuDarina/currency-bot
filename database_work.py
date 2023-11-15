@@ -72,7 +72,9 @@ def update_notify(id, notify):
 
 
 def get_notify(id):
-    cur.execute(f"SELECT notify FROM currency_bot_data WHERE id={id}")
+    cur.execute(f"SELECT notify "
+                f"FROM currency_bot_data "
+                f"WHERE id={id} and banks is not null and currencies is not null")
     return cur.fetchone()
 
 
