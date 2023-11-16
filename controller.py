@@ -40,8 +40,7 @@ def telegram_bot(token):
         bot.send_message(message.chat.id,
                          "/help - помощь \n/configure - выбор валют и банков \n/notifyOn - включить ежедневные уведомления\n"
                          "/notifyOff - выключить ежедневные уведомления\n"
-                         "/get - получить сводку по выбранным валютам и банкам \n/getstat - получение статистики \n"
-                                          "/location - получить ближайшие банки")
+                         "/get - получить сводку по выбранным валютам и банкам \n/location - получить ближайшие банки")
 
     @bot.message_handler(commands=["get"])
     def start_message(message):
@@ -57,32 +56,58 @@ def telegram_bot(token):
             user_id = message.chat.id
             latitude = message.location.latitude
             longitude = message.location.longitude
+            bank_names = sum(list(get_banks(user_id)), [])
+
             geocoder_url = "https://search-maps.yandex.ru/v1/"
-            params = {
-                "apikey": "cd3ab8da-15f6-4feb-83ac-c13e22eb2c24",
-                "format": "json",
-                "text": f"обмен валют, {get_banks(user_id)}",
-                "lang": "ru_RU",
-                "ll": f"{longitude},{latitude}",
-                "spn": "0.02, 0.02",
-                "results": 5
-            }
-            response = requests.get(geocoder_url, params=params).json()
-            resultBanks = response['features']
 
-            bank_adresses = []
-            bank_longitude = []
-            bank_latitude = []
-            for address in resultBanks:
-                bank_adresses.append(address['properties']['CompanyMetaData']['address'])
-                bank_longitude.append(address['geometry']['coordinates'][0])
-                bank_latitude.append(address['geometry']['coordinates'][1])
+            if bank_names is None:
+                params = {
+                    "apikey": "cd3ab8da-15f6-4feb-83ac-c13e22eb2c24",
+                    "format": "json",
+                    "text": "обмен валют",
+                    "lang": "ru_RU",
+                    "ll": f"{longitude},{latitude}",
+                    "spn": "0.02, 0.02",
+                    "results": 5
+                }
+                response = requests.get(geocoder_url, params=params).json()
+                resultBanks = response['features']
 
-            formatted_message = "Ближайшие отделения банка находятся: \n\n" + "\n".join(bank_adresses)
-            bot.send_message(message.chat.id, formatted_message, parse_mode='HTML')
-            bot.send_location(message.chat.id, latitude=bank_latitude[0], longitude=bank_longitude[0])
-            bot.send_location(message.chat.id, latitude=bank_latitude[1], longitude=bank_longitude[1])
-            bot.send_location(message.chat.id, latitude=bank_latitude[2], longitude=bank_longitude[2])
+                bank_adresses = []
+                bank_longitude = []
+                bank_latitude = []
+                for address in resultBanks:
+                    bank_adresses.append(address['properties']['CompanyMetaData']['address'])
+                    bank_longitude.append(address['geometry']['coordinates'][0])
+                    bank_latitude.append(address['geometry']['coordinates'][1])
+
+                formatted_message = "Ближайшие отделения банков находятся: \n\n" + "\n".join(bank_adresses)
+                bot.send_message(message.chat.id, formatted_message, parse_mode='HTML')
+
+                for item in range(len(bank_longitude)):
+                    bot.send_location(message.chat.id, latitude=bank_latitude[item], longitude=bank_longitude[item])
+            else:
+                for bank_name in bank_names:
+                    params = {
+                        "apikey": "cd3ab8da-15f6-4feb-83ac-c13e22eb2c24",
+                        "format": "json",
+                        "text": f"обмен валют, {bank_name}",
+                        "lang": "ru_RU",
+                        "ll": f"{longitude},{latitude}",
+                        "spn": "0.02, 0.02",
+                        "results": 1
+                    }
+                    response = requests.get(geocoder_url, params=params).json()
+                    if response is not None:
+                        resultBanks = response['features'][0]
+
+                        bank_adresses = resultBanks['properties']['CompanyMetaData']['address']
+                        bank_longitude = resultBanks['geometry']['coordinates'][0]
+                        bank_latitude = resultBanks['geometry']['coordinates'][1]
+
+                        formatted_message = f"Ближайшее отделение банка {bank_name} находится: \n\n" + f"\n{bank_adresses}"
+                        bot.send_message(message.chat.id, formatted_message, parse_mode='HTML')
+                        bot.send_location(message.chat.id, latitude=bank_latitude, longitude=bank_longitude)
         else:
             bot.send_message(message.chat.id, "К сожалению, не удалось получить вашу геолокацию")
 
