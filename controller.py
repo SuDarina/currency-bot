@@ -56,7 +56,12 @@ def telegram_bot(token):
             user_id = message.chat.id
             latitude = message.location.latitude
             longitude = message.location.longitude
-            bank_names = sum(list(get_banks(user_id)), [])
+            user_banks = get_banks(user_id)
+
+            if user_banks is not None:
+                bank_names = sum(list(user_banks), [])
+            else:
+                bank_names = None
 
             geocoder_url = "https://search-maps.yandex.ru/v1/"
 
@@ -98,7 +103,7 @@ def telegram_bot(token):
                         "results": 1
                     }
                     response = requests.get(geocoder_url, params=params).json()
-                    if response is not None:
+                    if response['features'] is not None:
                         resultBanks = response['features'][0]
 
                         bank_adresses = resultBanks['properties']['CompanyMetaData']['address']
@@ -108,6 +113,8 @@ def telegram_bot(token):
                         formatted_message = f"Ближайшее отделение банка {bank_name} находится: \n\n" + f"\n{bank_adresses}"
                         bot.send_message(message.chat.id, formatted_message, parse_mode='HTML')
                         bot.send_location(message.chat.id, latitude=bank_latitude, longitude=bank_longitude)
+                    else:
+                        bot.send_message(message.chat.id, "Банков поблизости не найдено")
         else:
             bot.send_message(message.chat.id, "К сожалению, не удалось получить вашу геолокацию")
 
